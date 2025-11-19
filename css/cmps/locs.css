@@ -50,6 +50,19 @@
 .btn-user-pos:hover {
     background-color: whitesmoke;
 }
+.btn-change-theme{
+    border-radius: .2em;
+    background-color: #222;
+    padding: 6px 10px;
+    margin: 2px;
+    cursor: pointer;
+}
+.color {
+   padding: 0;
+    width: 0;
+    height: 0;
+    border: 0;
+}
 
 .loc-filter {
     background-color: var(--bg1);

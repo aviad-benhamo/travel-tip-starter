@@ -16,6 +16,7 @@ window.app = {
     onShareLoc,
     onSetSortBy,
     onSetFilterBy,
+    onChangeTheme,
 }
 
 function onInit() {
@@ -328,4 +329,8 @@ function cleanStats(stats) {
         return acc
     }, [])
     return cleanedStats
+}
+
+function onChangeTheme(value) {
+   document.querySelector('body').style.backgroundColor = value 
 }
