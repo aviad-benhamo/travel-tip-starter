@@ -1,7 +1,7 @@
 import { utilService } from './services/util.service.js'
 import { locService } from './services/loc.service.js'
 import { mapService } from './services/map.service.js'
-
+var gUserPos
 window.onload = onInit
 
 // To make things easier in this project structure 
@@ -34,13 +34,16 @@ function onInit() {
 
 function renderLocs(locs) {
     const selectedLocId = getLocIdFromQueryParams()
-
-    var strHTML = locs.map(loc => {
-        const className = (loc.id === selectedLocId) ? 'active' : ''
-        return `
-        <li class="loc ${className}" data-id="${loc.id}">
-            <h4>  
-                <span>${loc.name}</span>
+   var strHTML = locs.map(loc => {
+      const locLocation = { lat: loc.geo.lat, lng: loc.geo.lng }
+      const distance = gUserPos ? utilService.getDistance(gUserPos, locLocation, 'K') : false
+      const className = (loc.id === selectedLocId) ? 'active' : ''
+      return `
+      <li class="loc ${className}" data-id="${loc.id}">
+      <h4>  
+      <span>${loc.name}</span>
+      ${!distance ? '' : `<span>Distance: ${distance} KM</span>`}
+        
                 <span title="${loc.rate} stars">${'★'.repeat(loc.rate)}</span>
             </h4>
             <p class="muted">
@@ -129,7 +132,8 @@ function loadAndRenderLocs() {
 
 function onPanToUserPos() {
     mapService.getUserPosition()
-        .then(latLng => {
+       .then(latLng => {
+          gUserPos = latLng
             mapService.panTo({ ...latLng, zoom: 15 })
             unDisplayLoc()
             loadAndRenderLocs()
@@ -171,13 +175,17 @@ function onSelectLoc(locId) {
 }
 
 function displayLoc(loc) {
+      const locLocation = { lat: loc.geo.lat, lng: loc.geo.lng }
+   const distance = gUserPos ? 'Distance: ' + utilService.getDistance(gUserPos, locLocation, 'K') + ' KM' : ''
     document.querySelector('.loc.active')?.classList?.remove('active')
-    document.querySelector(`.loc[data-id="${loc.id}"]`).classList.add('active')
-
-    mapService.panTo(loc.geo)
-    mapService.setMarker(loc)
-
-    const el = document.querySelector('.selected-loc')
+   document.querySelector(`.loc[data-id="${loc.id}"]`).classList.add('active')
+   
+   
+   mapService.panTo(loc.geo)
+   mapService.setMarker(loc)
+   
+   const el = document.querySelector('.selected-loc')
+   el.querySelector('.loc-distance').innerText = distance
     el.querySelector('.loc-name').innerText = loc.name
     el.querySelector('.loc-address').innerText = loc.geo.address
     el.querySelector('.loc-rate').innerHTML = '★'.repeat(loc.rate)
