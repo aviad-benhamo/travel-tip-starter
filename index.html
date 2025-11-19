@@ -25,8 +25,8 @@
             <button type="button" title="My Position" onclick="app.onPanToUserPos()" class="btn-user-pos">&nbsp;
             </button>
             <label class="btn-change-theme">
-            <input type="color" title="Change Theme" oninput="app.onChangeTheme(this.value)" class="color">🎨
-            </input></label>
+                <input type="color" title="Change Theme" oninput="app.onChangeTheme(this.value)" class="color">🎨
+                </input></label>
         </form>
     </header>
     <main>
@@ -77,6 +77,27 @@
             </section>
         </div>
     </main>
+
+    <dialog class="loc-dialog">
+        <form onsubmit="app.onSaveLoc(event)">
+            <input type="hidden" name="id">
+            <h2>Location Details</h2>
+            <label>
+                Name:
+                <input type="text" name="name" required placeholder="Location Name">
+            </label>
+            <label>
+                Rate:
+                <input type="number" name="rate" min="1" max="5" required placeholder="Rate (1-5)">
+            </label>
+            <div class="actions">
+                <button type="button" onclick="app.onCloseDialog()">Cancel</button>
+                <button>Save</button>
+            </div>
+        </form>
+    </dialog>
+
+
     <pre class="debug" hidden></pre>
     <div class="user-msg"></div>
     <script type="module" src="js/app.controller.js"></script>

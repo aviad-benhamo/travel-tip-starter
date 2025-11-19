@@ -17,6 +17,8 @@ window.app = {
     onSetSortBy,
     onSetFilterBy,
     onChangeTheme,
+    onSaveLoc,
+    onCloseDialog,
 }
 
 function onInit() {
@@ -35,11 +37,11 @@ function onInit() {
 
 function renderLocs(locs) {
     const selectedLocId = getLocIdFromQueryParams()
-   var strHTML = locs.map(loc => {
-      const locLocation = { lat: loc.geo.lat, lng: loc.geo.lng }
-      const distance = gUserPos ? utilService.getDistance(gUserPos, locLocation, 'K') : false
-      const className = (loc.id === selectedLocId) ? 'active' : ''
-      return `
+    var strHTML = locs.map(loc => {
+        const locLocation = { lat: loc.geo.lat, lng: loc.geo.lng }
+        const distance = gUserPos ? utilService.getDistance(gUserPos, locLocation, 'K') : false
+        const className = (loc.id === selectedLocId) ? 'active' : ''
+        return `
       <li class="loc ${className}" data-id="${loc.id}">
       <h4>  
       <span>${loc.name}</span>
@@ -101,25 +103,40 @@ function onSearchAddress(ev) {
         })
 }
 
-function onAddLoc(geo) {
-    const locName = prompt('Loc name', geo.address || 'Just a place')
-    if (!locName) return
+function onUpdateLoc(locId) {
+    locService.getById(locId)
+        .then(loc => {
+            const elDialog = document.querySelector('dialog.loc-dialog')
+            const elForm = elDialog.querySelector('form')
 
-    const loc = {
-        name: locName,
-        rate: +prompt(`Rate (1-5)`, '3'),
-        geo
-    }
-    locService.save(loc)
-        .then((savedLoc) => {
-            flashMsg(`Added Location (id: ${savedLoc.id})`)
-            utilService.updateQueryParams({ locId: savedLoc.id })
-            loadAndRenderLocs()
+            // Populate the form with existing data
+            elForm.querySelector('[name=id]').value = loc.id
+            elForm.querySelector('[name=name]').value = loc.name
+            elForm.querySelector('[name=rate]').value = loc.rate
+
+            elDialog.dataset.type = 'update'
+
+            // Open the dialog
+            elDialog.showModal()
         })
-        .catch(err => {
-            console.error('OOPs:', err)
-            flashMsg('Cannot add location')
-        })
+}
+
+function onAddLoc(geo) {
+    const elDialog = document.querySelector('dialog.loc-dialog')
+    const elForm = elDialog.querySelector('form')
+
+    // 1. Reset form for new entry
+    elForm.reset()
+
+    // 2. Clear ID (so onSaveLoc knows it's a new location)
+    elForm.querySelector('[name=id]').value = ''
+
+    // 3. Store the GEO object in the dataset
+    elDialog.dataset.geo = JSON.stringify(geo)
+    elDialog.dataset.type = 'add' // for title change
+
+    // 4. Open the dialog
+    elDialog.showModal()
 }
 
 function loadAndRenderLocs() {
@@ -133,8 +150,8 @@ function loadAndRenderLocs() {
 
 function onPanToUserPos() {
     mapService.getUserPosition()
-       .then(latLng => {
-          gUserPos = latLng
+        .then(latLng => {
+            gUserPos = latLng
             mapService.panTo({ ...latLng, zoom: 15 })
             unDisplayLoc()
             loadAndRenderLocs()
@@ -146,24 +163,62 @@ function onPanToUserPos() {
         })
 }
 
-function onUpdateLoc(locId) {
-    locService.getById(locId)
-        .then(loc => {
-            const rate = +prompt('New rate?', loc.rate)
-            if (rate && rate !== loc.rate) {
-                loc.rate = rate
-                locService.save(loc)
-                    .then(savedLoc => {
-                        flashMsg(`Rate was set to: ${savedLoc.rate}`)
-                        loadAndRenderLocs()
-                    })
-                    .catch(err => {
-                        console.error('OOPs:', err)
-                        flashMsg('Cannot update location')
-                    })
+function onSaveLoc(ev) {
+    ev.preventDefault()
+    const elDialog = document.querySelector('dialog.loc-dialog')
+    const formData = new FormData(ev.target)
 
-            }
-        })
+    const locId = formData.get('id')
+    const name = formData.get('name')
+    const rate = +formData.get('rate')
+
+    if (locId) {
+        // UPDATE MODE
+        locService.getById(locId)
+            .then(loc => {
+                loc.name = name
+                loc.rate = rate
+                return locService.save(loc)
+            })
+            .then(savedLoc => {
+                flashMsg(`Updated: ${savedLoc.name}`)
+                loadAndRenderLocs()
+                elDialog.close()
+            })
+            .catch(err => {
+                console.error('OOPs:', err)
+                flashMsg('Cannot update location')
+                elDialog.close()
+            })
+
+    } else {
+        // ADD MODE
+        // Retrieve the geo data from the dataset
+        const geo = JSON.parse(elDialog.dataset.geo)
+
+        const loc = {
+            name,
+            rate,
+            geo
+        }
+
+        locService.save(loc)
+            .then((savedLoc) => {
+                flashMsg(`Added Location (id: ${savedLoc.id})`)
+                utilService.updateQueryParams({ locId: savedLoc.id })
+                loadAndRenderLocs()
+                elDialog.close()
+            })
+            .catch(err => {
+                console.error('OOPs:', err)
+                flashMsg('Cannot add location')
+                elDialog.close()
+            })
+    }
+}
+
+function onCloseDialog() {
+    document.querySelector('dialog.loc-dialog').close()
 }
 
 function onSelectLoc(locId) {
@@ -176,17 +231,17 @@ function onSelectLoc(locId) {
 }
 
 function displayLoc(loc) {
-      const locLocation = { lat: loc.geo.lat, lng: loc.geo.lng }
-   const distance = gUserPos ? 'Distance: ' + utilService.getDistance(gUserPos, locLocation, 'K') + ' KM' : ''
+    const locLocation = { lat: loc.geo.lat, lng: loc.geo.lng }
+    const distance = gUserPos ? 'Distance: ' + utilService.getDistance(gUserPos, locLocation, 'K') + ' KM' : ''
     document.querySelector('.loc.active')?.classList?.remove('active')
-   document.querySelector(`.loc[data-id="${loc.id}"]`).classList.add('active')
-   
-   
-   mapService.panTo(loc.geo)
-   mapService.setMarker(loc)
-   
-   const el = document.querySelector('.selected-loc')
-   el.querySelector('.loc-distance').innerText = distance
+    document.querySelector(`.loc[data-id="${loc.id}"]`).classList.add('active')
+
+
+    mapService.panTo(loc.geo)
+    mapService.setMarker(loc)
+
+    const el = document.querySelector('.selected-loc')
+    el.querySelector('.loc-distance').innerText = distance
     el.querySelector('.loc-name').innerText = loc.name
     el.querySelector('.loc-address').innerText = loc.geo.address
     el.querySelector('.loc-rate').innerHTML = '★'.repeat(loc.rate)
@@ -332,5 +387,5 @@ function cleanStats(stats) {
 }
 
 function onChangeTheme(value) {
-   document.querySelector('body').style.backgroundColor = value 
+    document.querySelector('body').style.backgroundColor = value
 }
