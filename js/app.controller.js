@@ -69,7 +69,7 @@ function renderLocs(locs) {
 }
 
 function onRemoveLoc(locId) {
-    let userConfirm = confirm("Are you sure?")
+    const userConfirm = confirm("Are you sure?")
     if (!userConfirm) return
 
     locService.remove(locId)
@@ -265,6 +265,10 @@ function onSetFilterBy({ txt, minRate }) {
 function renderLocStats() {
     locService.getLocCountByRateMap().then(stats => {
         handleStats(stats, 'loc-stats-rate')
+    })
+
+    locService.getLocCountByUpdateMap().then(stats => {
+        handleStats(stats, 'loc-stats-update')
     })
 }
 
