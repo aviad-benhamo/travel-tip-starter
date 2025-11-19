@@ -1,3 +1,4 @@
+import { envConfig } from '../config.js'
 
 export const mapService = {
     initMap,
@@ -8,7 +9,10 @@ export const mapService = {
     addClickListener
 }
 
-const API_KEY = 'AIzaSyCs1iHHlglWzj4lBYoLKGzvKmKWf9hLGJI'
+const API_KEY = envConfig?.googleMapsApiKey
+if (!API_KEY) {
+    console.warn('Missing Google Maps API key. Run "npm run build:config" after setting GOOGLE_MAPS_API_KEY in .env.')
+}
 var gMap
 var gMarker
 

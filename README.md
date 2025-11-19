@@ -35,16 +35,26 @@ travel-tip-starter/
 ```
 
 ## Getting Started
-1. **Clone & install dependencies** (none required beyond a modern browser). Optionally install a static server for clean module imports:
-   ```powershell
-   npm install -g serve
-   serve .
-   ```
-   Alternatively, open `index.html` via `Live Server` in VS Code.
-2. **Configure a Google Maps API key**:
-   - Create an API key with Maps JavaScript + Geocoding permissions.
-   - Update the `API_KEY` constant in `js/services/map.service.js`.
-3. **Load the app** in the browser (`http://localhost:3000` if using `serve`) and allow location access when prompted.
+1. **Install dependencies** (dotenv powers the env injection script):
+  ```powershell
+  npm install
+  ```
+2. **Create your env file** from the template and set the Google Maps key:
+  ```powershell
+  copy .env.example .env
+  # edit .env and set GOOGLE_MAPS_API_KEY
+  ```
+3. **Generate the runtime config** so the browser module can read the key without committing it:
+  ```powershell
+  npm run build:config
+  ```
+  This writes `js/config.js` (gitignored) with `envConfig.googleMapsApiKey`.
+4. **Serve the app** using any static server (ES modules require HTTP). For example:
+  ```powershell
+  npx serve .
+  ```
+  Or launch via VS Code's Live Server extension.
+5. **Load the app** in the browser (default `http://localhost:3000`) and allow location access when prompted.
 
 ## Usage
 1. Click anywhere on the map to open the dialog, name the spot, and set a rating.
